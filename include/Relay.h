@@ -24,7 +24,7 @@ typedef struct {
   int sensorId;
   int relayPin;
   uint8_t relayOptions;
-  const char * relayDescription;
+  const char relayDescription[200];
 } RelayConfigDef;
 
 #define RELAY_STATE_STORAGE 1

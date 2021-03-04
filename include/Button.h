@@ -49,7 +49,7 @@ typedef struct {
   int clickRelayId;
   int longClickRelayId;
   int doubleClickRelayId;
-  const char * buttonDescription;
+  const char buttonDescription[200];
 } ButtonConfigDef;
 
 
