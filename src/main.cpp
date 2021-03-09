@@ -3,7 +3,10 @@
 #include <EEPROM.h>
 #include <Relay.h>
 #include <Button.h>
-#define MY_GATEWAY_SERIAL
+// #define MY_DEBUG
+#define MY_PJON
+#define MY_NODE_ID 1
+#define MY_TRANSPORT_WAIT_READY_MS 1
 #include <MySensors.h>
 
 using namespace lkankowski;
@@ -63,6 +66,7 @@ FILE serial_stdout;
 
 // MySensors - This will execute before MySensors starts up
 void before() {
+  delay(10); // Node hangs without this!
   Serial.begin(115200);
 
    // Set up redirect of stdout to serial
