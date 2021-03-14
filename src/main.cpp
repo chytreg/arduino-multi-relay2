@@ -5,8 +5,10 @@
 #include <Button.h>
 // #define MY_DEBUG
 #define MY_PJON
+#define MY_PJON_PIN A0
 #define MY_NODE_ID 1
 #define MY_TRANSPORT_WAIT_READY_MS 1
+#define MY_SPLASH_SCREEN_DISABLED
 #include <MySensors.h>
 
 using namespace lkankowski;
@@ -29,7 +31,7 @@ const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
 #endif
 
 // Configuration in separate file
-#include "config.h"
+#include "config_nano.h"
 
 #ifdef USE_EXPANDER
   const int gNumberOfExpanders = sizeof(expanderAddresses);
@@ -287,7 +289,7 @@ void loop() {
 // MySensors - Presentation - Your sensor must first present itself to the controller.
 // Executed after "before()" and before "setup()"
 void presentation() {
-  sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION );
+  sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION);
 
   // Register every relay as separate sensor
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
