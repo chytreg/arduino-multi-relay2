@@ -1,13 +1,16 @@
 #include <Arduino.h>
 #include <assert.h>
-#include <EEPROM.h>
 #include <Relay.h>
 #include <Button.h>
 #define MY_DEBUG
+#define MY_DEBUG_VERBOSE_PJON
 #define MY_PJON
 #define MY_PJON_PIN 3
-#define MY_NODE_ID 2
-#define MY_TRANSPORT_WAIT_READY_MS 1
+#define MY_PJON_MAX_RETRIES 10
+#define PJON_POLLING_DURATION 5000
+// #define MY_NODE_ID 2
+// #define MY_TRANSPORT_WAIT_READY_MS 1
+
 #define MY_SPLASH_SCREEN_DISABLED
 #include <MySensors.h>
 
@@ -69,7 +72,7 @@ FILE serial_stdout;
 // MySensors - This will execute before MySensors starts up
 void before() {
   delay(10); // Node hangs without this!
-  Serial.begin(115200);
+  Serial.begin(MY_BAUD_RATE);
 
    // Set up redirect of stdout to serial
    fdev_setup_stream(&serial_stdout, serial_putchar, NULL, _FDEV_SETUP_WRITE);
@@ -111,8 +114,8 @@ void before() {
     }
     printf_P(PSTR("# %lu Debug startup - EEPROM (first value is version, relay state starts at %i\n"), debugCounter++, RELAY_STATE_STORAGE);
     printf_P(PSTR("# %lu > "), debugCounter++);
-    for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
-      printf("%i,", EEPROM.read(relayNum));
+    for (int relayNum = 0; relayNum < gNumberOfRelays+RELAY_STATE_STORAGE; relayNum++) {
+      printf("%i,", loadState(relayNum));
     }
     printf("\n");
     printf_P(PSTR("# %lu Debug startup - buttons pin state\n"), debugCounter++);
@@ -128,7 +131,7 @@ void before() {
   #endif
 
   // validate config
-  #ifdef USE_EXPANDER
+  #ifdef USE_EXPANDER_CHECK
     //TODO: check if I2C pins are not used
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
       RelayConfigDef relayConfig = {};
@@ -173,7 +176,7 @@ void before() {
   }
 
   // if version has changed, reset state of all relays
-  bool versionChangeResetState = (CONFIG_VERSION == EEPROM.read(0) ) ? false : true;
+  bool versionChangeResetState = (CONFIG_VERSION == loadState(0)) ? false : true;
 
   #ifdef USE_EXPANDER
     /* Start I2C bus and PCF8574 instance */
@@ -194,12 +197,13 @@ void before() {
 
     gRelay[relayNum].initialize(relayNum, relayConfig.sensorId, relayConfig.relayDescription);
     gRelay[relayNum].attachPin(relayConfig.relayPin);
-    gRelay[relayNum].setModeAndStartupState(relayConfig.relayOptions, versionChangeResetState);
+    gRelay[relayNum].setModeAndStartupState(relayConfig.relayOptions, false);
     gRelay[relayNum].start();
   }
+  // printf("versionChangeResetState, CONFIG_VERSION, EEPROM.read %i; %i; %i\n", versionChangeResetState, CONFIG_VERSION, loadState(0));
   if (versionChangeResetState) {
     // version has changed, so store new version in eeporom
-    EEPROM.write(0, CONFIG_VERSION);
+    saveState(0, CONFIG_VERSION);
   }
 }; // before()
 
@@ -336,12 +340,12 @@ void receive(const MyMessage &message) {
       } else if (debugCommand == 4) { // dump EEPROM
         printf_P(PSTR("# Dump EEPROM: "));
         for (int relayNum = 0; relayNum < gNumberOfRelays+RELAY_STATE_STORAGE; relayNum++) {
-          printf("%i,",EEPROM.read(relayNum));
+          printf("%i,",loadState(relayNum));
         }
         printf("\n");
       } else if (debugCommand == 5) { // clear EEPROM & reset
         for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-          EEPROM.write(RELAY_STATE_STORAGE + relayNum, 0);
+          saveState(RELAY_STATE_STORAGE + relayNum, 0);
         }
         resetFunc();
       } else if (debugCommand == 6) { // reset
